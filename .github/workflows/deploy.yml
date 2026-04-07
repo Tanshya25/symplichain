@@ -2,40 +2,34 @@ name: Deploy Staging
 
 on:
   push:
-    branches: [staging]
+    branches:
+      - staging
+
+permissions:
+  contents: write
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v3
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-      # ---------- FRONTEND ----------
-      - name: Setup Node
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18
-
-      - name: Build Frontend
-        run: |
-          cd frontend
-          npm install
-          npm run build
-
-      # ---------- BACKEND ----------
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
-          python-version: 3.11
+          python-version: "3.12"
 
-      - name: Install Backend Dependencies
+      - name: Install Dependencies
         run: |
           cd backend
+          python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Backend Test Run
+      - name: Run Backend Health Check
         run: |
           cd backend
-          python app.py
+          uvicorn app:app --host 127.0.0.1 --port 8000 &
+          sleep 5
+          curl http://127.0.0.1:8000/health
