@@ -6,30 +6,41 @@ on:
       - staging
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
+    defaults:
+      run:
+        shell: bash
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          submodules: false   # ← prevents future ghost submodule errors
+
+      - name: Verify Repository Structure
+        run: |
+          echo "Repo files:"
+          ls -la
 
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
-      - name: Install Dependencies
+      - name: Install Backend Dependencies
+        working-directory: backend
         run: |
-          cd backend
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run Backend Health Check
+      - name: Start API and Health Check
+        working-directory: backend
         run: |
-          cd backend
           uvicorn app:app --host 127.0.0.1 --port 8000 &
-          sleep 5
-          curl http://127.0.0.1:8000/health
+          sleep 6
+          curl --fail http://127.0.0.1:8000/health
